@@ -1,8 +1,8 @@
-# Mi Fitness Data Yearly Visualization
+# Mi Fitness Yearly Visualization
 
 A Python tool for visualizing personal fitness data exported from Mi Fitness. Generate insightful charts about your sleep patterns, steps, and activity trends with xkcd-style plots.
 
-一个用于可视化从小米运动导出数据的 Python 工具，使用 xkcd 风格的图表生成有关睡眠模式、步数和活动趋势的图表。
+可视化从小米运动健康导出数据的 Python 工具，使用 xkcd 风格生成有关睡眠模式、步数和活动趋势的图表。
 
 ## Features
 
@@ -36,7 +36,7 @@ For the authentic xkcd style, install the [xkcd font](https://github.com/ipython
 ### 1. Export Your Data
 First, export your fitness data from Xiaomi Health:
 1. Visit <https://account.xiaomi.com/fe/service/account/privacy>
-2. Request a data export (select health/fitness data)
+2. Request a data export (select Mi Fitness data)
 3. Wait for email notification (typically a few hours)
 4. Download and extract the zip file
 5. Locate `hlth_center_aggregated_fitness_data.csv`
@@ -63,4 +63,4 @@ python main.py data.csv --font "Comic Neue"
 
 ## Acknowledgments
 
-This project was developed with the assistance of AI coding tools including GitHub Copilot, Claude, ChatGPT, and DeepSeek.
+This project was developed with the assistance of LLMs including GitHub Copilot, Claude, ChatGPT, and DeepSeek.
