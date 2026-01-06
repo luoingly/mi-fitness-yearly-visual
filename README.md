@@ -15,9 +15,9 @@ A Python tool for visualizing personal fitness data exported from Mi Fitness. Ge
 
 ## Example Visualizations
 
-![Average Steps by Month](./example/steps_monthly.jpg) 
-
 ![Average Sleep Clock by Month](./example/sleep_clock_monthly.jpg) 
+
+![Average Steps by Month](./example/steps_monthly.jpg) 
 
 ## Installation
 
