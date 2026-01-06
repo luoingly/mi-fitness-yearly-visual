@@ -167,7 +167,6 @@ def save_figure(fig: plt.Figure, path: Path, format: str) -> None:
         for axis in (ax.xaxis, ax.yaxis):
             for tick_line in axis.get_ticklines():
                 tick_line.set_dashes([1.0])
-    fig.patch.set_facecolor("#fffdf8")
 
     if format == "png":
         fig.savefig(path.with_suffix(".png"), format="png", dpi=150)
@@ -188,7 +187,7 @@ def plot_sleep_clock_monthly(monthly_data: pd.DataFrame, out_path: Path, format:
     with plt.xkcd():
         plt.rcParams["font.family"] = font_family
         fig, ax = plt.subplots(figsize=(10, 5))
-        cute_axes(ax, facecolor="#fff3ef")
+        cute_axes(ax)
 
         ax.plot(months, bed_hours, marker="P", markersize=10,
                 linewidth=2, color="#f26a7e", label="Bed time")
@@ -227,7 +226,7 @@ def plot_steps_monthly(monthly_data: pd.DataFrame, out_path: Path, format: str, 
     with plt.xkcd():
         plt.rcParams["font.family"] = font_family
         fig, ax = plt.subplots(figsize=(10, 5))
-        cute_axes(ax, facecolor="#fbfffe")
+        cute_axes(ax)
 
         ax.bar(months, steps_values, color="#9c6ef0",
                alpha=0.85, edgecolor="#f6d2ff", linewidth=0.8)
@@ -257,7 +256,7 @@ def plot_steps_weekday(weekday_data: pd.DataFrame, out_path: Path, format: str, 
     with plt.xkcd():
         plt.rcParams["font.family"] = font_family
         fig, ax = plt.subplots(figsize=(9, 5))
-        cute_axes(ax, facecolor="#fffafc")
+        cute_axes(ax)
 
         ax.bar(labels, values, color="#f26a7e", alpha=0.85,
                edgecolor="#fbd7e6", linewidth=0.9)
@@ -286,7 +285,7 @@ def plot_sleep_clock_weekday(weekday_data: pd.DataFrame, out_path: Path, format:
     with plt.xkcd():
         plt.rcParams["font.family"] = font_family
         fig, ax = plt.subplots(figsize=(10, 5))
-        cute_axes(ax, facecolor="#fff3ef")
+        cute_axes(ax)
 
         ax.plot(labels, bed_hours, marker="P", markersize=10,
                 linewidth=2, color="#f26a7e", label="Bed time")
@@ -320,7 +319,7 @@ def plot_sleep_stage_share(stage_share: dict[str, float], out_path: Path, format
     with plt.xkcd():
         plt.rcParams["font.family"] = font_family
         fig, ax = plt.subplots(figsize=(6, 6))
-        fig.patch.set_facecolor("#fffdf8")
+        cute_axes(ax)
 
         labels = list(stage_share.keys())
         values = list(stage_share.values())
@@ -353,7 +352,7 @@ def plot_sleep_stage_monthly(monthly_data: pd.DataFrame, out_path: Path, format:
     with plt.xkcd():
         plt.rcParams["font.family"] = font_family
         fig, ax = plt.subplots(figsize=(10, 5))
-        cute_axes(ax, facecolor="#f5fff2")
+        cute_axes(ax)
 
         ax.bar(data, deep, label="Deep", color="#2e8b57")
         ax.bar(data, rem, bottom=deep, label="REM", color="#ff9f68")
@@ -407,7 +406,15 @@ def main():
                             day=31, hour=23, minute=59, second=59, tz=LOCAL_TZ)
 
     # Load and process data
-    df = load_data(args.input, START_DATE, END_DATE, LOCAL_TZ)
+    try:
+        df = load_data(args.input, START_DATE, END_DATE, LOCAL_TZ)
+    except FileNotFoundError:
+        print(f"Error: Input file '{args.input}' not found.")
+        return
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        print("Please ensure the input file is 'hlth_center_aggregated_fitness_data.csv' exported from Mi Fit.")
+        return
     print(f"Records in range: {len(df)}")
 
     sleep_df = build_sleep_data(df)
