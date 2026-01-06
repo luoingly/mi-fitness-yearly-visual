@@ -63,4 +63,4 @@ python main.py data.csv --font "Comic Neue"
 
 ## Acknowledgments
 
-This project was developed with the assistance of LLMs including GitHub Copilot, Claude, ChatGPT, and DeepSeek.
+Special thanks to [NanoApe](https://github.com/Konano) for the inspiration. This tool was developed with the assistance of LLMs including GitHub Copilot, Claude, ChatGPT, and DeepSeek.
