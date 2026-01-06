@@ -152,6 +152,31 @@ def build_steps_data(df: pd.DataFrame) -> pd.DataFrame:
     return steps_df
 
 
+def build_intensity_data(df: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    for _, row in df[(df["Tag"] == "daily_report") & (df["Key"] == "intensity")].iterrows():
+        payload = parse_json(row["Value"])
+        if not payload:
+            continue
+
+        local_date = pd.to_datetime(row["date_local"])
+        rows.append({
+            "date_local": row["date_local"],
+            "month": row["month"],
+            "week": local_date.to_period("W-MON"),
+            "weekday": local_date.day_name(),
+            "duration": payload.get("duration"),  # 中高强度运动时长（分钟）
+        })
+
+    intensity_df = pd.DataFrame(rows)
+    if not intensity_df.empty:
+        weekday_order = ["Monday", "Tuesday", "Wednesday",
+                         "Thursday", "Friday", "Saturday", "Sunday"]
+        intensity_df["weekday"] = pd.Categorical(
+            intensity_df["weekday"], categories=weekday_order, ordered=True)
+    return intensity_df
+
+
 def cute_axes(ax: plt.Axes, facecolor: str = "#fff6f2") -> None:
     ax.set_facecolor(facecolor)
     for spine in ax.spines.values():
@@ -379,6 +404,63 @@ def plot_sleep_stage_monthly(monthly_data: pd.DataFrame, out_path: Path, format:
         save_figure(fig, out_path, format)
 
 
+def plot_intensity_monthly(monthly_data: pd.DataFrame, out_path: Path, format: str, font_family: str) -> None:
+    if monthly_data.empty:
+        return
+
+    months = monthly_data["month"].dt.month.tolist()
+    intensity_values = monthly_data["duration"].tolist()
+
+    with plt.xkcd():
+        plt.rcParams["font.family"] = font_family
+        fig, ax = plt.subplots(figsize=(10, 5))
+        cute_axes(ax)
+
+        ax.bar(months, intensity_values, color="#2ecc71",
+               alpha=0.85, edgecolor="#a8e6cf", linewidth=0.8)
+
+        for x, y in zip(months, intensity_values):
+            if not pd.isna(y):
+                ax.text(x, y + max(intensity_values) * 0.01, f"{int(round(y))}",
+                        ha='center', va='bottom', fontsize=9, color="#5a3f4c")
+
+        ax.set_title("Monthly average moderate-to-vigorous intensity duration")
+        ax.set_ylabel("Minutes per day")
+        ax.set_xlabel("Month")
+        ax.set_xticks(months)
+        ax.set_xticklabels([str(m) for m in months])
+        ax.set_ylim(0, max(intensity_values) * 1.2)
+        save_figure(fig, out_path, format)
+
+
+def plot_intensity_weekday(weekday_data: pd.DataFrame, out_path: Path, format: str, font_family: str) -> None:
+    intensity = weekday_data.dropna(subset=["duration"]).copy()
+    if intensity.empty:
+        return
+
+    labels = intensity["weekday"].astype(str).tolist()
+    values = intensity["duration"].tolist()
+
+    with plt.xkcd():
+        plt.rcParams["font.family"] = font_family
+        fig, ax = plt.subplots(figsize=(9, 5))
+        cute_axes(ax)
+
+        ax.bar(labels, values, color="#3498db", alpha=0.85,
+               edgecolor="#aed6f1", linewidth=0.9)
+
+        for i, (label, value) in enumerate(zip(labels, values)):
+            if not pd.isna(value):
+                ax.text(i, value + max(values) * 0.01, f"{int(round(value))}",
+                        ha='center', va='bottom', fontsize=9, color="#5a3f4c")
+
+        ax.set_title("Weekday average moderate-to-vigorous intensity duration")
+        ax.set_ylabel("Minutes per day")
+        ax.set_xlabel("Weekday")
+        ax.set_ylim(0, max(values) * 1.2)
+        save_figure(fig, out_path, format)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate fitness data visualizations")
@@ -419,6 +501,7 @@ def main():
 
     sleep_df = build_sleep_data(df)
     steps_df = build_steps_data(df)
+    intensity_df = build_intensity_data(df)
 
     # Monthly sleep stats
     monthly_sleep = (sleep_df.groupby("month")
@@ -442,22 +525,19 @@ def main():
     stage_share = {k: (v / total_stage * 100 if total_stage else 0)
                    for k, v in stage_totals.items()}
 
-    # Steps data
-    steps_monthly = steps_df.groupby(
-        "month")["steps"].mean().reset_index().sort_values("month")
     weekday_order = ["Monday", "Tuesday", "Wednesday",
                      "Thursday", "Friday", "Saturday", "Sunday"]
-    steps_weekday = (steps_df.groupby("weekday", observed=True)["steps"]
-                     .mean()
-                     .reindex(weekday_order)
-                     .rename_axis("weekday")
-                     .reset_index())
-    sleep_weekday = (sleep_df.groupby("weekday", observed=True)
-                     .agg(bed_hour=("bed_hour", circular_mean),
-                          wake_hour=("wake_hour", circular_mean))
-                     .reindex(weekday_order)
-                     .rename_axis("weekday")
-                     .reset_index())
+    steps_monthly = steps_df.groupby("month")["steps"] \
+        .mean().reset_index().sort_values("month")
+    steps_weekday = steps_df.groupby("weekday", observed=True)["steps"] \
+        .mean().reindex(weekday_order).rename_axis("weekday").reset_index()
+    sleep_weekday = sleep_df.groupby("weekday", observed=True) \
+        .agg(bed_hour=("bed_hour", circular_mean), wake_hour=("wake_hour", circular_mean)) \
+        .reindex(weekday_order).rename_axis("weekday").reset_index()
+    intensity_monthly = intensity_df.groupby("month")["duration"] \
+        .mean().reset_index().sort_values("month")
+    intensity_weekday = intensity_df.groupby("weekday", observed=True)["duration"] \
+        .mean().reindex(weekday_order).rename_axis("weekday").reset_index()
 
     # Generate plots
     plot_steps_monthly(
@@ -472,6 +552,10 @@ def main():
         monthly_sleep, args.output / "sleep_stage_monthly", args.format, args.font)
     plot_sleep_stage_share(
         stage_share, args.output / "sleep_stage_share", args.format, args.font)
+    plot_intensity_monthly(
+        intensity_monthly, args.output / "intensity_monthly", args.format, args.font)
+    plot_intensity_weekday(
+        intensity_weekday, args.output / "intensity_weekday", args.format, args.font)
 
     print("Plots generated successfully.")
 
